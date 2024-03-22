@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 polars = {version = "0.38.3", features = ["ndarray"]}
+polars-io = "0.38.3"
+rand = "0.8.4"
+ndarray = "0.15.6"
