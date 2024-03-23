@@ -5,8 +5,24 @@ use rand::rngs::ThreadRng;
 use rand::thread_rng;
 use rand::Rng;
 
+fn read_csv() -> DataFrame {
+    // Read a CSV file into a DataFrame
+    let df: DataFrame = CsvReader::from_path("train.csv")
+        .unwrap()
+        .has_header(true)
+        .finish() 
+        .unwrap();
+
+    // Print the DataFrame
+    println!("DataFrame:\n{}", df);
+
+    df
+}
+
 fn argmax(matrix: Array2<f32>) -> Array1<f32> {
     let mut output = Array1::zeros(matrix.shape()[1]);
+    
+    
     for (i, row) in matrix.axis_iter(Axis(1)).enumerate() {
         let (max_idx, max_val) =
             row.iter()
@@ -21,21 +37,6 @@ fn argmax(matrix: Array2<f32>) -> Array1<f32> {
         output[i] = max_idx as f32;
     }
     output
-}
-
-
-fn read_csv() -> DataFrame {
-    // Read a CSV file into a DataFrame
-    let df: DataFrame = CsvReader::from_path("train.csv")
-        .unwrap()
-        .has_header(true)
-        .finish() 
-        .unwrap();
-
-    // Print the DataFrame
-    println!("DataFrame:\n{}", df);
-
-    df
 }
 
 fn parse_data(df: DataFrame) -> (Array2<f32>, usize, usize) {
@@ -290,4 +291,10 @@ fn main() {
     let iterations: i32 = 500;
 
     let (_w1, _b1, _w2, _b2) = gradient_descent(x_train, y_train, alpha, iterations);
+
+    println!("w1: {:?}", _w1);
+    println!("b1: {:?}", _b1);
+    println!("w2: {:?}", _w2);
+    println!("b2: {:?}", _b2);
+    
 }
