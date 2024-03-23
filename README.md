@@ -1,10 +1,9 @@
 # Neural Network Made from Scratch in Rust
-
-## Only used polars for io, ndarray for linear algebra/math, and rng for random
+### Only used polars for io, ndarray for linear algebra/math, and rng for random
 
 inspired by Samson Zhang, transpiled to Rust
 
-## Trained on MNIST dataset
+### Trained on MNIST dataset
 Accessible at https://www.kaggle.com/competitions/digit-recognizer or Kaggle API
 
 ## Steps:
