@@ -7,7 +7,7 @@ use rand::Rng;
 
 fn argmax(matrix: Array2<f32>) -> Array1<f32> {
     let mut output = Array1::zeros(matrix.shape()[1]);
-    for (i, row) in matrix.axis_iter(Axis(0)).enumerate() {
+    for (i, row) in matrix.axis_iter(Axis(1)).enumerate() {
         let (max_idx, max_val) =
             row.iter()
                 .enumerate()
@@ -211,8 +211,10 @@ fn update_params(
 }
 
 fn get_predictions(a2: Array2<f32>) -> Array1<f32> {
-    println!("{:?}", argmax(a2));
-    return argmax(a2);
+    let x = argmax(a2);
+    println!("{:?}", x);
+    x
+    // return argmax(a2);
 }
 
 fn get_accuracy(predictions: Array1<f32>, y: &Array1<f32>) -> f32 {
@@ -288,5 +290,4 @@ fn main() {
     let iterations: i32 = 500;
 
     let (_w1, _b1, _w2, _b2) = gradient_descent(x_train, y_train, alpha, iterations);
-
 }
