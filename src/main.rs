@@ -1,7 +1,6 @@
-mod util;
 mod ml;
 
-use crate::util::*;
+use neural::*;
 use crate::ml::gradient_descent;
 use polars::prelude::*;
 use ndarray::*;
