@@ -1,12 +1,9 @@
-// use polars::prelude::*;
-// use polars_io::csv::CsvReader;
 use ndarray::*;
-// use rand::rngs::ThreadRng;
 use rand::thread_rng;
 use rand::Rng;
 
 
-fn argmax(matrix: Array2<f32>) -> Array1<f32> {
+fn argmax(matrix: &Array2<f32>) -> Array1<f32> {
     let mut output = Array1::zeros(matrix.shape()[1]);
     
     
@@ -49,9 +46,6 @@ fn init_params() -> (Array2<f32>, Array1<f32>, Array2<f32>, Array1<f32>) {
         *elem = rng.gen::<f32>() - 0.5;
     }
     // println!("w1: {:?}", w1);
-    // println!("b1: {:?}", b1);
-    // println!("w2: {:?}", w2);
-    // println!("b2: {:?}", b2);
     (w1, b1, w2, b2)
 }
 
@@ -68,24 +62,22 @@ fn softmax(z: &Array2<f32>) -> Array2<f32> {
     return tot;
 }
 
-fn forward_prop(w1: &Array2<f32>, b1: &Array1<f32>, w2: &Array2<f32>, b2: &Array1<f32>, x: &mut Array2<f32>) -> (Array2<f32>, Array2<f32>, Array2<f32>, Array2<f32>) {
-    let z1: Array2<f32> = w1.dot(x) + b1.broadcast((x.shape()[1], 10)).unwrap().t();
-    let a1: Array2<f32> = re_lu(&z1);
-    let z2: Array2<f32> = w2.dot(&a1) + b2.broadcast((a1.shape()[1], 10)).unwrap().t();
-    let a2: Array2<f32> = softmax(&z2);
+fn forward_prop(
+    w1: &Array2<f32>, 
+    b1: &Array1<f32>, 
+    w2: &Array2<f32>, 
+    b2: &Array1<f32>, 
+    x: &mut Array2<f32>,
+    z1: &mut Array2<f32>,
+    a1: &mut Array2<f32>,
+    z2: &mut Array2<f32>,
+    a2: &mut Array2<f32>,
+) {
+    *z1 = w1.dot(x) + b1.broadcast((x.shape()[1], 10)).unwrap().t();
+    *a1 = re_lu(&z1);
+    *z2 = w2.dot(a1) + b2.broadcast((a1.shape()[1], 10)).unwrap().t();
+    *a2 = softmax(z2);
     // println!("x: {:?}", x);
-    // println!("w1: {:?}", w1);
-    // println!("x_1: {:?}", x.slice_axis(Axis(1), Slice::new(0,Some(1),1)));
-    // println!("w1_1: {:?}", w1.slice_axis(Axis(0), Slice::new(0,Some(1),1)));
-    // let ax = w1.slice_axis(Axis(0), Slice::new(0,Some(1),1)).to_owned().dot(&x.slice_axis(Axis(1), Slice::new(0,Some(1),1)).to_owned());
-    // println!("dot: {:?}",ax);
-    // println!("w1: {:?}", w1.dot(x));
-    // println!("b1: {:?}", b1.broadcast((x.shape()[1], 10)).unwrap().t());
-    // println!("z1: {:?}", z1);
-    // println!("a1: {:?}", a1);
-    // println!("z2: {:?}", z2);
-    // println!("a2: {:?}", a2);
-    return (z1, a1, z2, a2)
 }
 
 fn re_lu_deriv(z: Array2<f32>) -> Array2<f32> {
@@ -117,35 +109,37 @@ fn backward_prop(
     x: &Array2<f32>,
     y: &Array1<f32>,
     m: usize,
-) -> (Array2<f32>, Array1<f32>, Array2<f32>, Array1<f32>) {
+    dw1: &mut Array2<f32>,
+    db1: &mut Array1<f32>,
+    dw2: &mut Array2<f32>,
+    db2: &mut Array1<f32>
+) {
     let one_hot_y = one_hot(y.clone());
     let dz2 = a2 - &one_hot_y;
-    let dw2 = 1.0 / m as f32 * dz2.dot(&a1.t());
-    let db2 = 1.0 / m as f32 * dz2.sum_axis(Axis(1));
+    *dw2 = 1.0 / m as f32 * dz2.dot(&a1.t());
+    *db2 = 1.0 / m as f32 * dz2.sum_axis(Axis(1));
     let dz1 = w2.t().dot(&dz2) * re_lu_deriv(z1.clone());
-    let dw1 = 1.0 / m as f32 * dz1.dot(&x.t());
-    let db1 = 1.0 / m as f32 * dz1.sum_axis(Axis(1));
-    (dw1, db1, dw2, db2)
+    *dw1 = 1.0 / m as f32 * dz1.dot(&x.t());
+    *db1 = 1.0 / m as f32 * dz1.sum_axis(Axis(1));
 }
 fn update_params(
-    w1: Array2<f32>,
-    b1: Array1<f32>,
-    w2: Array2<f32>,
-    b2: Array1<f32>,
-    dw1: Array2<f32>,
-    db1: Array1<f32>,
-    dw2: Array2<f32>,
-    db2: Array1<f32>,
+    w1: &mut Array2<f32>,
+    b1: &mut Array1<f32>,
+    w2: &mut Array2<f32>,
+    b2: &mut Array1<f32>,
+    dw1: &Array2<f32>,
+    db1: &Array1<f32>,
+    dw2: &Array2<f32>,
+    db2: &Array1<f32>,
     alpha: f32,
-) -> (Array2<f32>, Array1<f32>, Array2<f32>, Array1<f32>) {
-    let updated_w1 = &w1 - &(alpha * &dw1);
-    let updated_b1 = &b1 - &(alpha * &db1);
-    let updated_w2 = &w2 - &(alpha * &dw2);
-    let updated_b2 = &b2 - &(alpha * &db2);
-    (updated_w1, updated_b1, updated_w2, updated_b2)
+) {
+    *w1 -= &(alpha * dw1);
+    *w2 -= &(alpha * dw2);
+    *b1 -= &(alpha * db1);
+    *b2 -= &(alpha * db2);
 }
 
-fn get_predictions(a2: Array2<f32>) -> Array1<f32> {
+fn get_predictions(a2: &Array2<f32>) -> Array1<f32> {
     let x = argmax(a2);
     println!("{:?}", x);
     x
@@ -162,23 +156,43 @@ fn get_accuracy(predictions: Array1<f32>, y: &Array1<f32>) -> f32 {
     return correct as f32 / y.len() as f32
 }
 
-pub fn gradient_descent(mut x: Array2<f32>, y: Array1<f32>, alpha: f32, iterations: i32) -> (Array2<f32>, Array1<f32>, Array2<f32>, Array1<f32>){
+pub fn gradient_descent(mut x: Array2<f32>, y: Array1<f32>, alpha: f32, iterations: i32) -> (Array2<f32>, Array1<f32>, Array2<f32>, Array1<f32>) {
+    let (
+        mut z1,
+        mut a1,
+        mut z2,
+        mut a2
+    ) = (
+        Array2::<f32>::zeros((10, x.shape()[1])), 
+        Array2::<f32>::zeros((10, x.shape()[1])), 
+        Array2::<f32>::zeros((10, x.shape()[1])), 
+        Array2::<f32>::zeros((10, x.shape()[1]))
+    );
+    let (
+        mut dw1,
+        mut db1,
+        mut dw2,
+        mut db2
+    ) = (
+        Array2::<f32>::zeros((10, x.shape()[1])), 
+        Array1::<f32>::zeros(10), 
+        Array2::<f32>::zeros((10, 10)), 
+        Array1::<f32>::zeros(10)
+    );
+
     let (mut w1, mut b1, mut w2, mut b2) = init_params();
+
     for i in 0..iterations {
         println!("Iteration: {}", i);
-        let (z1, a1, _z2, a2) = forward_prop(&w1, &b1, &w2, &b2, &mut x);
-        // println!("z1 {:?}", z1);
-        // println!("z2 {:?}", z2);
-        // println!("a1 {:?}", a1);
-        // println!("a2 {:?}", a2);
-        let (dw1, db1, dw2, db2) = backward_prop(&z1, &a1, &a2, &w2, &x, &y, x.shape()[1]);
-        (w1, b1, w2, b2) = update_params(w1, b1, w2, b2, dw1, db1, dw2, db2, alpha);
+        forward_prop(&w1, &b1, &w2, &b2, &mut x, &mut z1, &mut a1, &mut z2, &mut a2);
+        backward_prop(&z1, &a1, &a2, &w2, &x, &y, x.shape()[1], &mut dw1, &mut db1, &mut dw2, &mut db2);
+        update_params(&mut w1, &mut b1, &mut w2, &mut b2, &dw1, &db1, &dw2, &db2, alpha);
         if i % 10 == 0 {
             println!("Iteration: {}", i);
-            let predictions = get_predictions(a2);
+            let predictions = get_predictions(&a2);
             println!("{}", get_accuracy(predictions, &y));
         }
     }
-    return (w1, b1, w2, b2)
 
+    return (w1, b1, w2, b2);
 }
