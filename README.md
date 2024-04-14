@@ -15,5 +15,10 @@ Accessible at https://www.kaggle.com/competitions/digit-recognizer or Kaggle API
 6. Create prediction accuracy function by replication numpy argmax in Rust
 7. Perform gradient descent by selecting hyperparameters and iterating through data set using function.
 
+## Next Steps!
+1. ADAM loss functions
+2. OOP functions similar to Tensor Flow
+3. Convolutions
+
 ## Final Accuracy
 74%.
